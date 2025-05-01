@@ -17,15 +17,45 @@ public class Player : MonoBehaviour
     private bool isGrounded;
     private bool isSprinting;
 
+    [Header("Camera Control")]
+    [SerializeField] private Transform headTransform;
+    [SerializeField] private float mouseSensitivity = 400f;
+    [SerializeField] private float minVerticalAngle = -90f;
+    [SerializeField] private float maxVerticalAngle = 90f;
+
+    private float xRotation;
+    private float yRotation;
+    private float yRotationVelocity;
+
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
     }
 
+    void Start()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
     void Update()
     {
-        Debug.Log($"Input: H={Input.GetAxis("Horizontal")}, V={Input.GetAxis("Vertical")}");
+        HandleLook();
         HandleMovement();
+    }
+
+    private void HandleLook()
+    {
+        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
+        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
+
+        xRotation -= mouseY * Time.deltaTime;
+        xRotation = Mathf.Clamp(xRotation, minVerticalAngle, maxVerticalAngle);
+
+        yRotation += mouseX * Time.deltaTime;
+
+        headTransform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+        transform.rotation = Quaternion.Euler(0f, yRotation, 0f);
     }
 
     private void HandleMovement()
@@ -38,23 +68,21 @@ public class Player : MonoBehaviour
                 velocity.y = -2f;
             }
 
-            // Прыжок только когда на земле
             if (Input.GetButtonDown("Jump"))
             {
                 velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-                Debug.Log($"Jump! Velocity: {velocity.y}");
             }
         }
         else
         {
-            Debug.Log($"No");
             velocity.y += gravity * Time.deltaTime;
         }
 
-        float x = Input.GetAxisRaw("Horizontal");
-        float z = Input.GetAxisRaw("Vertical");
-
-        Vector3 move = new Vector3(x, 0, z).normalized;
+        Vector3 move = new Vector3(
+            Input.GetAxisRaw("Horizontal"),
+            0,
+            Input.GetAxisRaw("Vertical")
+        ).normalized;
 
         move = transform.TransformDirection(move);
 
